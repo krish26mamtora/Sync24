@@ -1,7 +1,7 @@
 "use client";
+
 import PushNotificationButton from "@/components/push/PushNotificationButton";
 import { useEffect, useState } from "react";
-// import sanitizeHtml from "sanitize-html";
 
 interface Article {
   id: string;
@@ -49,7 +49,13 @@ export default function Home() {
 
   if (loading) {
     return (
-      <main className="reader">
+      <main className="reader loading-screen">
+        <div className="loading-logo">S</div>
+
+        <h1>Sync24</h1>
+
+        <div className="loading-spinner" aria-hidden="true" />
+
         <p>Loading today's edition...</p>
       </main>
     );
@@ -58,7 +64,13 @@ export default function Home() {
   if (error || articles.length === 0) {
     return (
       <main className="reader">
-        <h1>Sync24</h1>
+        <h1>Sync24 — Latest Tech & AI News</h1>
+
+        <p>
+          Stay updated with the latest technology, AI, software and IT news from
+          the last 24 hours.
+        </p>
+
         <p>{error || "No articles available."}</p>
       </main>
     );
@@ -70,14 +82,26 @@ export default function Home() {
   const isLast = currentIndex === articles.length - 1;
 
   const articleContent = article.content;
+
   return (
     <main className="reader">
+      <section className="seo-intro">
+        <h1>Sync24 — Latest Tech & AI News</h1>
+
+        <p>
+          Stay updated with the latest technology, AI, software and IT news from
+          the last 24 hours. Sync24 brings the top tech stories together into
+          one daily news edition.
+        </p>
+      </section>
+
       <header className="header">
-        <h1>Sync24</h1>
+        <span className="site-name">Sync24</span>
 
         <span>
           {currentIndex + 1} / {articles.length}
         </span>
+
         <PushNotificationButton />
       </header>
 
