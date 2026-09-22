@@ -2,6 +2,7 @@
 
 import PushNotificationButton from "@/components/push/PushNotificationButton";
 import { useEffect, useState } from "react";
+import Header from "@/components/layout/Header";
 
 interface Article {
   id: string;
@@ -85,25 +86,14 @@ export default function Home() {
 
   return (
     <main className="reader">
-      <section className="seo-intro">
-        <h1>Sync24 — Latest Tech & AI News</h1>
-
-        <p>
-          Stay updated with the latest technology, AI, software and IT news from
-          the last 24 hours. Sync24 brings the top tech stories together into
-          one daily news edition.
-        </p>
-      </section>
-
-      <header className="header">
-        <span className="site-name">Sync24</span>
-
-        <span>
-          {currentIndex + 1} / {articles.length}
-        </span>
-
-        <PushNotificationButton />
-      </header>
+      <Header
+        currentIndex={currentIndex}
+        totalArticles={articles.length}
+        isFirst={isFirst}
+        isLast={isLast}
+        onPrevious={() => setCurrentIndex((index) => index - 1)}
+        onNext={() => setCurrentIndex((index) => index + 1)}
+      />
 
       <article className="article">
         <div className="article-meta">
@@ -141,24 +131,6 @@ export default function Home() {
           Read original article →
         </a>
       </article>
-
-      <footer className="navigation">
-        <button
-          className="nav-button"
-          disabled={isFirst}
-          onClick={() => setCurrentIndex((index) => index - 1)}
-        >
-          ← Previous
-        </button>
-
-        <button
-          className="nav-button"
-          disabled={isLast}
-          onClick={() => setCurrentIndex((index) => index + 1)}
-        >
-          Next →
-        </button>
-      </footer>
     </main>
   );
 }
