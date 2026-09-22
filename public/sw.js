@@ -5,7 +5,7 @@ self.addEventListener("push", function (event) {
 
   const data = event.data.json();
 
-  const title = data.title || "DailyHunt";
+  const title = data.title || "Sync24";
 
   const options = {
     body: data.body || "Today's tech news is ready.",

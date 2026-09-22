@@ -31,7 +31,7 @@ export async function extractArticleContent(
     const response = await fetch(url, {
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (compatible; DailyHunt/1.0; +https://dailyhunt.app)",
+          "Mozilla/5.0 (compatible; Sync24/1.0; +https://sync24.vercel.app)",
         Accept: "text/html,application/xhtml+xml",
       },
       signal: AbortSignal.timeout(10000),

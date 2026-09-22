@@ -63,7 +63,7 @@ function getArticleText(article: ClassifiedNewsArticle): {
 
    Measures:
    "Is this actually the kind of technology story
-   DailyHunt wants?"
+   Sync24 wants?"
 ========================================================= */
 
 function calculateRelevance(article: ClassifiedNewsArticle): number {
@@ -594,7 +594,7 @@ function calculateImportance(article: ClassifiedNewsArticle): number {
    Maximum: 25
 
    Measures:
-   "Would a DailyHunt reader actually care about this
+   "Would a Sync24 reader actually care about this
    beyond simply knowing that it happened?"
 ========================================================= */
 

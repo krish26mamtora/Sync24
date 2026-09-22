@@ -58,7 +58,7 @@ export default function Home() {
   if (error || articles.length === 0) {
     return (
       <main className="reader">
-        <h1>DailyHunt</h1>
+        <h1>Sync24</h1>
         <p>{error || "No articles available."}</p>
       </main>
     );
@@ -73,7 +73,7 @@ export default function Home() {
   return (
     <main className="reader">
       <header className="header">
-        <h1>DailyHunt</h1>
+        <h1>Sync24</h1>
 
         <span>
           {currentIndex + 1} / {articles.length}

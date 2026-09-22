@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -14,8 +14,51 @@ function urlBase64ToUint8Array(base64String: string) {
 
 export default function PushNotificationButton() {
   const [status, setStatus] = useState<
-    "idle" | "loading" | "enabled" | "denied" | "error"
-  >("idle");
+    "checking" | "idle" | "loading" | "enabled" | "denied" | "error"
+  >("checking");
+
+  useEffect(() => {
+    async function checkSubscription() {
+      try {
+        if (
+          !("serviceWorker" in navigator) ||
+          !("PushManager" in window) ||
+          !("Notification" in window)
+        ) {
+          setStatus("error");
+          return;
+        }
+
+        const permission = Notification.permission;
+
+        if (permission === "denied") {
+          setStatus("denied");
+          return;
+        }
+
+        const registration =
+          await navigator.serviceWorker.getRegistration("/sw.js");
+
+        if (!registration) {
+          setStatus("idle");
+          return;
+        }
+
+        const subscription = await registration.pushManager.getSubscription();
+
+        if (subscription) {
+          setStatus("enabled");
+        } else {
+          setStatus("idle");
+        }
+      } catch (error) {
+        console.error("[PUSH] Failed to check subscription:", error);
+        setStatus("error");
+      }
+    }
+
+    checkSubscription();
+  }, []);
 
   async function enableNotifications() {
     try {
@@ -75,6 +118,10 @@ export default function PushNotificationButton() {
       console.error("[PUSH] Failed:", error);
       setStatus("error");
     }
+  }
+
+  if (status === "checking") {
+    return null;
   }
 
   if (status === "enabled") {

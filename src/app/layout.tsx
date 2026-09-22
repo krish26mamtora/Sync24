@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "DailyHunt",
+  title: "Sync24",
   description: "Your daily technology news edition",
 };
 
