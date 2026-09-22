@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { runNewsPipeline } from "@/services/news/news.service";
+// import { runNewsPipeline } from "@/services/news/news.service";
+import { runNewsPipeline } from "@/services/news/pipeline.service";
 import { createDailyEdition } from "@/services/news/edition.service";
 
 export async function GET() {

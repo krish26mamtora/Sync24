@@ -1,5 +1,5 @@
 "use client";
-
+import PushNotificationButton from "@/components/push/PushNotificationButton";
 import { useEffect, useState } from "react";
 // import sanitizeHtml from "sanitize-html";
 
@@ -69,35 +69,6 @@ export default function Home() {
   const isFirst = currentIndex === 0;
   const isLast = currentIndex === articles.length - 1;
 
-  // const articleContent = article.content
-  //   ? sanitizeHtml(article.content, {
-  //       allowedTags: [
-  //         "p",
-  //         "br",
-  //         "strong",
-  //         "b",
-  //         "em",
-  //         "i",
-  //         "u",
-  //         "blockquote",
-  //         "ul",
-  //         "ol",
-  //         "li",
-  //         "a",
-  //         "h2",
-  //         "h3",
-  //         "h4",
-  //         "figure",
-  //         "figcaption",
-  //         "img",
-  //       ],
-  //       allowedAttributes: {
-  //         a: ["href", "target", "rel"],
-  //         img: ["src", "alt", "width", "height"],
-  //       },
-  //       allowedSchemes: ["http", "https"],
-  //     })
-  //   : null;
   const articleContent = article.content;
   return (
     <main className="reader">
@@ -107,6 +78,7 @@ export default function Home() {
         <span>
           {currentIndex + 1} / {articles.length}
         </span>
+        <PushNotificationButton />
       </header>
 
       <article className="article">
@@ -126,17 +98,6 @@ export default function Home() {
           />
         )}
 
-        {/* <div className="article-content">
-          {articleContent ? (
-            <div
-              dangerouslySetInnerHTML={{
-                __html: articleContent,
-              }}
-            />
-          ) : (
-            <p>{article.description || "No article content available."}</p>
-          )}
-        </div> */}
         <div className="article-content">
           {articleContent ? (
             <div dangerouslySetInnerHTML={{ __html: articleContent }} />

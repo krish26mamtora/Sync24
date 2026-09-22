@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { runNewsPipeline } from "@/services/news/news.service";
-
+// import { runNewsPipeline } from "@/services/news/news.service";
+import { runNewsPipeline } from "@/services/news/pipeline.service";
 export async function GET() {
   try {
     const result = await runNewsPipeline();
