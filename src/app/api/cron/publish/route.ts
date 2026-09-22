@@ -193,7 +193,7 @@ export async function POST(request: Request) {
           },
           JSON.stringify({
             title: "Sync24",
-            body: "Today's top 10 tech stories are ready 🚀",
+            body: "Today's top 10 tech stories are ready",
             url: "/",
           }),
         );

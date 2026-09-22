@@ -1,16 +1,26 @@
 self.addEventListener("push", function (event) {
-  if (!event.data) {
-    return;
-  }
+  let data = {};
 
-  const data = event.data.json();
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch (error) {
+      console.error("[SW] Push payload is not JSON:", error);
+
+      data = {
+        title: "Sync24",
+        body: event.data.text(),
+        url: "/",
+      };
+    }
+  }
 
   const title = data.title || "Sync24";
 
   const options = {
     body: data.body || "Today's tech news is ready.",
-    icon: "/icon-192.png",
-    badge: "/icon-192.png",
+    icon: "/sync_logo.png",
+    badge: "/sync_logo.png",
     data: {
       url: data.url || "/",
     },
