@@ -2,7 +2,12 @@ import Parser from "rss-parser";
 
 import { newsSources } from "@/config/news-sources";
 import type { NormalizedNewsArticle } from "@/types/news";
-import { cleanArticleHtml, cleanArticleText } from "@/lib/utils/clean-html";
+
+import {
+  cleanArticleHtml,
+  cleanArticleText,
+  cleanArticleTitle,
+} from "@/lib/utils/clean-html";
 
 const parser = new Parser({
   customFields: {
@@ -16,12 +21,10 @@ const parser = new Parser({
 });
 
 function extractImage(item: any): string | null {
-  // 1. Standard enclosure
   if (item.enclosure?.url) {
     return item.enclosure.url;
   }
 
-  // 2. media:content
   if (item.mediaContent?.$?.url) {
     return item.mediaContent.$.url;
   }
@@ -30,7 +33,6 @@ function extractImage(item: any): string | null {
     return item.mediaContent.url;
   }
 
-  // 3. media:thumbnail
   if (item.mediaThumbnail?.$?.url) {
     return item.mediaThumbnail.$.url;
   }
@@ -39,7 +41,6 @@ function extractImage(item: any): string | null {
     return item.mediaThumbnail.url;
   }
 
-  // 4. Try extracting an image from HTML
   const html = item.contentEncoded || item.content || item.description;
 
   if (html) {
@@ -61,56 +62,44 @@ function normalizeItem(
     return null;
   }
 
-  console.log("[RSS DEBUG]", {
-    source: source.name,
-    title: item.title,
-    description: item.description,
-    content: item.content,
-    contentEncoded: item.contentEncoded,
-    contentSnippet: item.contentSnippet,
-  });
+  const title = cleanArticleTitle(item.title);
+
+  if (!title) {
+    return null;
+  }
+
+  const description = cleanArticleText(
+    item.description?.trim() || item.contentSnippet?.trim() || null,
+  );
+
+  const content = cleanArticleHtml(
+    item.contentEncoded?.trim() || item.content?.trim() || null,
+  );
+
   return {
-    title: item.title.trim(),
+    title,
 
-    description: cleanArticleText(
-      item.description?.trim() || item.contentSnippet?.trim() || null,
-    ),
+    description,
 
-    content: cleanArticleHtml(
-      item.contentEncoded?.trim() || item.content?.trim() || null,
-    ),
+    content,
 
     originalUrl: item.link,
+
     sourceId: source.id,
+
     sourceName: source.name,
-    author: item.creator?.trim() || item.author?.trim() || null,
+
+    author: cleanArticleText(
+      item.creator?.trim() || item.author?.trim() || null,
+    ),
+
     imageUrl: extractImage(item),
+
     publishedAt: item.isoDate || item.pubDate || null,
+
     externalId: item.guid || item.id || null,
   };
 }
-//   return {
-//     title: item.title.trim(),
-
-//     description:
-//       item.description?.trim() || item.contentSnippet?.trim() || null,
-
-//     content: item.contentEncoded?.trim() || item.content?.trim() || null,
-
-//     originalUrl: item.link,
-
-//     sourceId: source.id,
-//     sourceName: source.name,
-
-//     author: item.creator?.trim() || item.author?.trim() || null,
-
-//     imageUrl: extractImage(item),
-
-//     publishedAt: item.isoDate || item.pubDate || null,
-
-//     externalId: item.guid || item.id || null,
-//   };
-// }
 
 export async function fetchRssSource(
   source: (typeof newsSources)[number],

@@ -1,10 +1,14 @@
 import * as cheerio from "cheerio";
+
 import type { SelectedNewsArticle } from "@/services/news/selection.service";
+
+import { cleanArticleHtml } from "@/lib/utils/clean-html";
 
 export interface ExtractedArticleContent {
   content: string | null;
   imageUrl: string | null;
 }
+
 export async function enrichSelectedArticles(
   articles: SelectedNewsArticle[],
 ): Promise<SelectedNewsArticle[]> {
@@ -24,6 +28,7 @@ export async function enrichSelectedArticles(
 
   return results;
 }
+
 export async function extractArticleContent(
   url: string,
 ): Promise<ExtractedArticleContent> {
@@ -32,8 +37,10 @@ export async function extractArticleContent(
       headers: {
         "User-Agent":
           "Mozilla/5.0 (compatible; Sync24/1.0; +https://sync24.vercel.app)",
+
         Accept: "text/html,application/xhtml+xml",
       },
+
       signal: AbortSignal.timeout(10000),
     });
 
@@ -47,18 +54,78 @@ export async function extractArticleContent(
     }
 
     const html = await response.text();
+
     const $ = cheerio.load(html);
 
-    // Remove elements that should never be part of article content.
+    // -------------------------------------------------------
+    // Remove obvious page-level junk BEFORE selecting body
+    // -------------------------------------------------------
+
     $(
-      "script, style, noscript, iframe, nav, footer, header, " +
-        ".ad-unit, " +
-        ".jw-player-inline-promo",
+      [
+        "script",
+        "style",
+        "noscript",
+        "template",
+        "iframe",
+        "object",
+        "embed",
+
+        "nav",
+        "header",
+        "footer",
+        "aside",
+
+        "form",
+        "input",
+        "button",
+        "select",
+        "option",
+        "textarea",
+
+        "video",
+        "audio",
+        "canvas",
+
+        ".ad",
+        ".ads",
+        ".advertisement",
+        ".ad-unit",
+
+        ".share",
+        ".share-buttons",
+        ".social",
+        ".social-share",
+
+        ".newsletter",
+        ".newsletter-signup",
+
+        ".comments",
+        ".comment-section",
+
+        ".related",
+        ".related-posts",
+        ".related-articles",
+
+        ".recommended",
+        ".recommendations",
+
+        ".sidebar",
+        ".widget",
+
+        ".dropdown",
+        ".popup",
+        ".modal",
+      ].join(","),
     ).remove();
 
+    // -------------------------------------------------------
+    // Try to locate the actual article
+    // -------------------------------------------------------
+
     const selectors = [
-      "article",
       '[itemprop="articleBody"]',
+      "article",
       ".article-content",
       ".article-body",
       ".entry-content",
@@ -71,7 +138,19 @@ export async function extractArticleContent(
     for (const selector of selectors) {
       const element = $(selector).first();
 
-      if (element.length > 0 && (element.text().trim().length ?? 0) > 500) {
+      if (!element.length) {
+        continue;
+      }
+
+      const textLength = element.text().replace(/\s+/g, " ").trim().length;
+
+      /*
+       * Require a meaningful amount of text.
+       *
+       * This prevents tiny UI containers from becoming
+       * the article.
+       */
+      if (textLength >= 500) {
         articleElement = element;
         break;
       }
@@ -82,6 +161,7 @@ export async function extractArticleContent(
 
       return {
         content: null,
+
         imageUrl:
           $('meta[property="og:image"]').attr("content") ||
           $('meta[name="twitter:image"]').attr("content") ||
@@ -89,24 +169,38 @@ export async function extractArticleContent(
       };
     }
 
-    // Remove unnecessary elements inside the article.
-    articleElement
-      .find(
-        "script, style, noscript, iframe, " +
-          ".ad-unit, " +
-          ".jw-player-inline-promo",
-      )
-      .remove();
+    // -------------------------------------------------------
+    // Clean the selected article AGAIN
+    // -------------------------------------------------------
 
-    const content = articleElement.html()?.trim() || null;
+    const rawArticleHtml = articleElement.html()?.trim() || null;
+
+    if (!rawArticleHtml) {
+      return {
+        content: null,
+        imageUrl: null,
+      };
+    }
+
+    /*
+     * THIS is the critical step.
+     *
+     * We never store articleElement.html() directly.
+     */
+    const cleanedContent = cleanArticleHtml(rawArticleHtml);
+
+    // -------------------------------------------------------
+    // Image
+    // -------------------------------------------------------
 
     const imageUrl =
       $('meta[property="og:image"]').attr("content") ||
       $('meta[name="twitter:image"]').attr("content") ||
+      articleElement.find("img").first().attr("src") ||
       null;
 
     return {
-      content,
+      content: cleanedContent,
       imageUrl,
     };
   } catch (error) {
