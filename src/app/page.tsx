@@ -124,6 +124,26 @@ export default function Home() {
 
   return (
     <main className="reader">
+      <div className="article-list-pill">
+        <span className="article-list-icon">☰</span>
+
+        <div className="article-list-popup">
+          {articles.map((article, index) => (
+            <button
+              key={article.id}
+              type="button"
+              className={`article-list-item ${
+                index === currentIndex ? "active" : ""
+              }`}
+              onClick={() => setCurrentIndex(index)}
+            >
+              <span className="article-list-number">{index + 1}</span>
+
+              <span className="article-list-title">{article.title}</span>
+            </button>
+          ))}
+        </div>
+      </div>
       {/* Reading Progress Bar */}
       <div
         className="reading-progress-bar"
