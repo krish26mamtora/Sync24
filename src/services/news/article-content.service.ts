@@ -57,9 +57,10 @@ export async function extractArticleContent(
 
     const $ = cheerio.load(html);
 
-    // -------------------------------------------------------
-    // Remove obvious page-level junk BEFORE selecting body
-    // -------------------------------------------------------
+    // =======================================================
+    // STEP 1
+    // Remove page-level junk BEFORE article detection
+    // =======================================================
 
     $(
       [
@@ -116,12 +117,21 @@ export async function extractArticleContent(
         ".dropdown",
         ".popup",
         ".modal",
+
+        ".author",
+        ".authors",
+        ".author-info",
+        ".author-bio",
+        ".byline",
+        ".article-author",
+        ".article-byline",
       ].join(","),
     ).remove();
 
-    // -------------------------------------------------------
-    // Try to locate the actual article
-    // -------------------------------------------------------
+    // =======================================================
+    // STEP 2
+    // Find the actual article
+    // =======================================================
 
     const selectors = [
       '[itemprop="articleBody"]',
@@ -130,10 +140,9 @@ export async function extractArticleContent(
       ".article-body",
       ".entry-content",
       ".post-content",
-      "main",
     ];
 
-    let articleElement = null;
+    let articleElement: ReturnType<typeof $> | null = null;
 
     for (const selector of selectors) {
       const element = $(selector).first();
@@ -145,16 +154,21 @@ export async function extractArticleContent(
       const textLength = element.text().replace(/\s+/g, " ").trim().length;
 
       /*
-       * Require a meaningful amount of text.
+       * Require a reasonable amount of actual text.
        *
-       * This prevents tiny UI containers from becoming
-       * the article.
+       * This prevents tiny UI elements from becoming
+       * the article body.
        */
       if (textLength >= 500) {
         articleElement = element;
         break;
       }
     }
+
+    // =======================================================
+    // STEP 3
+    // Nothing found
+    // =======================================================
 
     if (!articleElement) {
       console.warn(`[ARTICLE CONTENT] No article body found: ${url}`);
@@ -169,9 +183,10 @@ export async function extractArticleContent(
       };
     }
 
-    // -------------------------------------------------------
-    // Clean the selected article AGAIN
-    // -------------------------------------------------------
+    // =======================================================
+    // STEP 4
+    // NEVER store articleElement.html() directly
+    // =======================================================
 
     const rawArticleHtml = articleElement.html()?.trim() || null;
 
@@ -182,16 +197,17 @@ export async function extractArticleContent(
       };
     }
 
-    /*
-     * THIS is the critical step.
-     *
-     * We never store articleElement.html() directly.
-     */
+    // =======================================================
+    // STEP 5
+    // Strictly clean article HTML
+    // =======================================================
+
     const cleanedContent = cleanArticleHtml(rawArticleHtml);
 
-    // -------------------------------------------------------
-    // Image
-    // -------------------------------------------------------
+    // =======================================================
+    // STEP 6
+    // Main image
+    // =======================================================
 
     const imageUrl =
       $('meta[property="og:image"]').attr("content") ||

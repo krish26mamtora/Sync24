@@ -1,5 +1,3 @@
-// src/lib/utils/clean-html.ts
-
 import * as cheerio from "cheerio";
 import sanitizeHtml from "sanitize-html";
 
@@ -45,6 +43,7 @@ const JUNK_SELECTORS = [
   ".ad-wrapper",
   ".ad-unit",
   ".advertising",
+
   "[class*='advert']",
   "[class*='ad-container']",
   "[id*='advert']",
@@ -58,6 +57,7 @@ const JUNK_SELECTORS = [
   ".social-share",
   ".social-buttons",
   ".social-links",
+
   "[class*='share']",
   "[class*='social']",
 
@@ -67,14 +67,16 @@ const JUNK_SELECTORS = [
   ".comment",
   ".comment-section",
   ".comment-list",
+
   "[class*='comment']",
 
-  // Newsletter / subscriptions
+  // Newsletter / subscription
   ".newsletter",
   ".newsletter-signup",
   ".subscribe",
   ".subscription",
   ".signup",
+
   "[class*='newsletter']",
   "[class*='subscribe']",
 
@@ -86,27 +88,38 @@ const JUNK_SELECTORS = [
   ".recommendations",
   ".more-stories",
   ".read-more",
+
   "[class*='related']",
   "[class*='recommended']",
 
   // UI widgets
   ".dropdown",
-  ".menu",
   ".popup",
   ".modal",
   ".tooltip",
   ".toolbar",
   ".widget",
   ".sidebar",
+
   "[class*='dropdown']",
   "[class*='widget']",
   "[class*='sidebar']",
+
+  // Author information
+  ".author",
+  ".authors",
+  ".author-info",
+  ".author-bio",
+  ".byline",
+  ".article-author",
+  ".article-byline",
 ];
 
 /**
- * Only these tags are allowed in stored article HTML.
+ * These are the ONLY HTML tags that are allowed
+ * inside the stored article content.
  *
- * Notice that div/span are NOT allowed.
+ * div/span are intentionally NOT included.
  */
 const ALLOWED_ARTICLE_TAGS = [
   "p",
@@ -134,22 +147,20 @@ const ALLOWED_ARTICLE_TAGS = [
   "figcaption",
 
   "img",
-
-  "a",
 ];
 
 /**
  * Clean article HTML.
  *
- * Result contains only:
- * - article text
+ * Output contains only:
+ *
+ * - paragraphs
  * - headings
  * - lists
- * - blockquotes
+ * - quotes
  * - code
+ * - figures
  * - images
- *
- * No buttons/forms/dropdowns/social widgets/etc.
  */
 export function cleanArticleHtml(rawHtml: string | null): string | null {
   if (!rawHtml) {
@@ -158,9 +169,10 @@ export function cleanArticleHtml(rawHtml: string | null): string | null {
 
   const $ = cheerio.load(rawHtml);
 
-  // ---------------------------------------------------------
-  // 1. Remove known junk
-  // ---------------------------------------------------------
+  // =========================================================
+  // STEP 1
+  // Remove known junk elements
+  // =========================================================
 
   for (const selector of JUNK_SELECTORS) {
     try {
@@ -170,18 +182,20 @@ export function cleanArticleHtml(rawHtml: string | null): string | null {
     }
   }
 
-  // ---------------------------------------------------------
-  // 2. Remove HTML comments
-  // ---------------------------------------------------------
+  // =========================================================
+  // STEP 2
+  // Remove HTML comments
+  // =========================================================
 
   $("*")
     .contents()
     .filter((_, node) => node.type === "comment")
     .remove();
 
-  // ---------------------------------------------------------
-  // 3. Remove obvious UI text containers
-  // ---------------------------------------------------------
+  // =========================================================
+  // STEP 3
+  // Remove obvious UI text
+  // =========================================================
 
   const UI_TEXT_PATTERNS = [
     /^share$/i,
@@ -214,9 +228,130 @@ export function cleanArticleHtml(rawHtml: string | null): string | null {
     }
   });
 
-  // ---------------------------------------------------------
-  // 4. Remove empty elements
-  // ---------------------------------------------------------
+  // =========================================================
+  // STEP 4
+  // Clean figures
+  //
+  // Some publishers put caption text directly inside
+  // <figure> instead of using <figcaption>.
+  // =========================================================
+
+  $("figure").each((_, element) => {
+    const $figure = $(element);
+
+    const $image = $figure.find("img").first();
+
+    // Clone figure and remove image so that we can
+    // extract only the caption text.
+    const $clone = $figure.clone();
+
+    $clone.find("img").remove();
+
+    const captionText = $clone.text().replace(/\s+/g, " ").trim();
+
+    // Remove everything from original figure.
+    $figure.empty();
+
+    // Put image back.
+    if ($image.length) {
+      $figure.append($image);
+    }
+
+    // Convert raw figure text into figcaption.
+    if (captionText) {
+      $figure.append($("<figcaption>").text(captionText));
+    }
+
+    // Remove useless empty figure.
+    if (!$image.length && !captionText) {
+      $figure.remove();
+    }
+  });
+
+  // =========================================================
+  // STEP 5
+  // Clean images
+  // =========================================================
+
+  $("img").each((_, element) => {
+    const $img = $(element);
+
+    /*
+     * Different websites use different attributes
+     * for lazy-loaded images.
+     */
+    const src =
+      $img.attr("src") ||
+      $img.attr("data-src") ||
+      $img.attr("data-lazy-src") ||
+      $img.attr("data-original");
+
+    // No usable image URL = remove image.
+    if (!src) {
+      $img.remove();
+      return;
+    }
+
+    const alt = $img.attr("alt");
+
+    /*
+     * Cheerio's Element type is not exported by your
+     * installed version, so don't use cheerio.Element.
+     *
+     * We only need the attribute names here.
+     */
+    for (const attribute of Object.keys((element as any).attribs ?? {})) {
+      $img.removeAttr(attribute);
+    }
+
+    // Keep ONLY src.
+    $img.attr("src", src);
+
+    // Keep alt if available.
+    if (alt?.trim()) {
+      $img.attr("alt", alt.trim());
+    }
+  });
+
+  // =========================================================
+  // STEP 6
+  // Remove links but preserve their text
+  // =========================================================
+
+  $("a").each((_, element) => {
+    const $a = $(element);
+
+    /*
+     * Example:
+     *
+     * <a href="...">OpenAI</a>
+     *
+     * becomes:
+     *
+     * OpenAI
+     */
+    $a.replaceWith($a.contents());
+  });
+
+  // =========================================================
+  // STEP 7
+  // Normalize whitespace
+  // =========================================================
+
+  $("p, h2, h3, h4, li, blockquote, figcaption").each((_, element) => {
+    const $element = $(element);
+
+    const text = $element.text().replace(/\s+/g, " ").trim();
+
+    if (text) {
+      $element.text(text);
+    }
+  });
+
+  // =========================================================
+  // STEP 8
+  // Remove empty elements
+  // =========================================================
 
   $("p, h2, h3, h4, li, blockquote, figure, figcaption").each((_, element) => {
     const $element = $(element);
@@ -230,57 +365,14 @@ export function cleanArticleHtml(rawHtml: string | null): string | null {
     }
   });
 
-  // ---------------------------------------------------------
-  // 5. Clean images
-  // ---------------------------------------------------------
-
-  $("img").each((_, element) => {
-    const $img = $(element);
-
-    const src =
-      $img.attr("src") ||
-      $img.attr("data-src") ||
-      $img.attr("data-lazy-src") ||
-      $img.attr("data-original");
-
-    if (!src) {
-      $img.remove();
-      return;
-    }
-
-    const alt = $img.attr("alt");
-
-    // Remove every attribute.
-    for (const attribute of Object.keys(element.attribs ?? {})) {
-      $img.removeAttr(attribute);
-    }
-
-    // Restore only approved attributes.
-    $img.attr("src", src);
-
-    if (alt?.trim()) {
-      $img.attr("alt", alt.trim());
-    }
-  });
-
-  // ---------------------------------------------------------
-  // 6. Remove links but preserve their text
-  // ---------------------------------------------------------
-
-  $("a").each((_, element) => {
-    const $a = $(element);
-
-    $a.replaceWith($a.contents());
-  });
-
-  // ---------------------------------------------------------
-  // 7. Remove classes, IDs and inline attributes
-  // ---------------------------------------------------------
+  // =========================================================
+  // STEP 9
+  // Remove attributes from everything except images
+  // =========================================================
 
   $("*").each((_, element) => {
     const $element = $(element);
 
-    // Images were already cleaned above.
     if (element.type === "tag" && element.name === "img") {
       return;
     }
@@ -290,9 +382,10 @@ export function cleanArticleHtml(rawHtml: string | null): string | null {
     }
   });
 
-  // ---------------------------------------------------------
-  // 8. Get cleaned HTML
-  // ---------------------------------------------------------
+  // =========================================================
+  // STEP 10
+  // Get cleaned HTML
+  // =========================================================
 
   const bodyHtml = $("body").html()?.trim() || "";
 
@@ -300,9 +393,10 @@ export function cleanArticleHtml(rawHtml: string | null): string | null {
     return null;
   }
 
-  // ---------------------------------------------------------
-  // 9. Final whitelist sanitizer
-  // ---------------------------------------------------------
+  // =========================================================
+  // STEP 11
+  // FINAL whitelist sanitizer
+  // =========================================================
 
   const cleaned = sanitizeHtml(bodyHtml, {
     allowedTags: ALLOWED_ARTICLE_TAGS,
@@ -335,7 +429,7 @@ export function cleanArticleHtml(rawHtml: string | null): string | null {
 /**
  * Convert HTML to plain text.
  *
- * Used for description/content snippets.
+ * Used for RSS descriptions/snippets.
  */
 export function cleanArticleText(rawText: string | null): string | null {
   if (!rawText) {
@@ -353,9 +447,7 @@ export function cleanArticleText(rawText: string | null): string | null {
 }
 
 /**
- * Clean article title.
- *
- * Title must always be plain text.
+ * Article title must always be plain text.
  */
 export function cleanArticleTitle(rawTitle: string | null): string | null {
   if (!rawTitle) {
