@@ -30,12 +30,12 @@ body {
   justify-content: space-between;
   align-items: center;
 
-  margin-bottom: 55px;
+  margin-bottom: 10px;
 }
 
 .header h1 {
   margin: 0;
-  font-size: 36px;
+  font-size: 26px;
   letter-spacing: -1px;
 }
 
@@ -429,5 +429,61 @@ body {
     min-width: 0;
     flex: 1;
     padding: 14px 10px;
+  }
+}
+/* Reading Progress Bar */
+.reading-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: rgb(108, 204, 147);
+  z-index: 2000;
+  transition: width 0.1s linear;
+}
+
+/* Constrain text container width for better readability */
+.article-content-wrapper {
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+/* Refined Meta Badges */
+.article-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 14px;
+  color: #607067;
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+.source-pill {
+  background: rgba(108, 204, 147, 0.15);
+  color: #2e6b4b;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.category-text, .date-text {
+  color: #607067;
+}
+
+/* Smooth fade transition feel when switching stories */
+.article {
+  animation: fadeIn 0.25s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0.6;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

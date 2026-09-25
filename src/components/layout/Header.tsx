@@ -32,7 +32,8 @@ export default function Header({
           className="header-nav-button"
           disabled={isFirst}
           onClick={onPrevious}
-          aria-label="Previous article"
+          aria-label="Previous article (Left Arrow)"
+          title="Previous article (←)"
         >
           ←
         </button>
@@ -45,7 +46,8 @@ export default function Header({
           className="header-nav-button"
           disabled={isLast}
           onClick={onNext}
-          aria-label="Next article"
+          aria-label="Next article (Right Arrow)"
+          title="Next article (→)"
         >
           →
         </button>

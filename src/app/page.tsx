@@ -24,6 +24,7 @@ export default function Home() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
     async function loadEdition() {
@@ -48,15 +49,48 @@ export default function Home() {
     loadEdition();
   }, []);
 
+  // Keyboard navigation (Left / Right arrows)
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "ArrowLeft") {
+        setCurrentIndex((index) => Math.max(0, index - 1));
+      } else if (e.key === "ArrowRight") {
+        setCurrentIndex((index) => Math.min(articles.length - 1, index + 1));
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [articles.length]);
+
+  // Scroll progress tracker for current article
+  useEffect(() => {
+    function handleScroll() {
+      const totalHeight =
+        document.documentElement.scrollHeight - window.innerHeight;
+      if (totalHeight > 0) {
+        const progress = (window.scrollY / totalHeight) * 100;
+        setScrollProgress(progress);
+      } else {
+        setScrollProgress(0);
+      }
+    }
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [currentIndex]);
+
+  // Reset scroll position on article change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentIndex]);
+
   if (loading) {
     return (
       <main className="reader loading-screen">
         <div className="loading-logo">S</div>
-
         <h1>Sync24</h1>
-
         <div className="loading-spinner" aria-hidden="true" />
-
         <p>Loading today's edition...</p>
       </main>
     );
@@ -66,26 +100,36 @@ export default function Home() {
     return (
       <main className="reader">
         <h1>Sync24 — Latest Tech & AI News</h1>
-
         <p>
           Stay updated with the latest technology, AI, software and IT news from
           the last 24 hours.
         </p>
-
         <p>{error || "No articles available."}</p>
       </main>
     );
   }
 
   const article = articles[currentIndex];
-
   const isFirst = currentIndex === 0;
   const isLast = currentIndex === articles.length - 1;
-
   const articleContent = article.content;
+
+  // Format published time cleanly if available
+  const formattedDate = article.published_at
+    ? new Date(article.published_at).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+      })
+    : null;
 
   return (
     <main className="reader">
+      {/* Reading Progress Bar */}
+      <div
+        className="reading-progress-bar"
+        style={{ width: `${scrollProgress}%` }}
+      />
+
       <Header
         currentIndex={currentIndex}
         totalArticles={articles.length}
@@ -97,9 +141,13 @@ export default function Home() {
 
       <article className="article">
         <div className="article-meta">
-          <span>{article.source_name}</span>
-
-          {article.category && <span> · {article.category}</span>}
+          <span className="source-pill">{article.source_name}</span>
+          {article.category && (
+            <span className="category-text"> · {article.category}</span>
+          )}
+          {formattedDate && (
+            <span className="date-text"> · {formattedDate}</span>
+          )}
         </div>
 
         <h2>{article.title}</h2>
@@ -112,24 +160,26 @@ export default function Home() {
           />
         )}
 
-        <div className="article-content">
-          {articleContent ? (
-            <div dangerouslySetInnerHTML={{ __html: articleContent }} />
-          ) : (
-            <p>{article.description || "No article content available."}</p>
-          )}
+        <div className="article-content-wrapper">
+          <div className="article-content">
+            {articleContent ? (
+              <div dangerouslySetInnerHTML={{ __html: articleContent }} />
+            ) : (
+              <p>{article.description || "No article content available."}</p>
+            )}
+          </div>
+
+          {article.author && <p className="author">By {article.author}</p>}
+
+          <a
+            href={article.original_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="original-link"
+          >
+            Read original article →
+          </a>
         </div>
-
-        {article.author && <p className="author">By {article.author}</p>}
-
-        <a
-          href={article.original_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="original-link"
-        >
-          Read original article →
-        </a>
       </article>
     </main>
   );
