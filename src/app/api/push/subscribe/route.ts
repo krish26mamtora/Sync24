@@ -11,6 +11,45 @@ interface PushSubscriptionRequest {
   };
 }
 
+export async function DELETE(request: Request) {
+  try {
+    const body = await request.json();
+
+    if (!body.endpoint) {
+      return NextResponse.json(
+        { error: "Subscription endpoint is required." },
+        { status: 400 },
+      );
+    }
+
+    const supabase = createSupabaseServerClient();
+
+    const { error } = await supabase
+      .from("push_subscriptions")
+      .delete()
+      .eq("endpoint", body.endpoint);
+
+    if (error) {
+      throw new Error(`Failed to remove subscription: ${error.message}`);
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Successfully unsubscribed.",
+    });
+  } catch (error) {
+    console.error("[PUSH UNSUBSCRIBE] Failed:", error);
+
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to unsubscribe.",
+      },
+      { status: 500 },
+    );
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as PushSubscriptionRequest;

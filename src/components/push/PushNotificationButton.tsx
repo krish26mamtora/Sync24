@@ -2,6 +2,15 @@
 
 import { useEffect, useState } from "react";
 
+type PushStatus =
+  | "checking"
+  | "idle"
+  | "loading"
+  | "unsubscribing"
+  | "enabled"
+  | "denied"
+  | "error";
+
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
 
@@ -36,10 +45,9 @@ function NotificationIcon() {
 }
 
 export default function PushNotificationButton() {
-  const [status, setStatus] = useState<
-    "checking" | "idle" | "loading" | "enabled" | "denied" | "error"
-  >("checking");
+  const [status, setStatus] = useState<PushStatus>("checking");
 
+  // Check existing subscription when component mounts
   useEffect(() => {
     async function checkSubscription() {
       try {
@@ -69,11 +77,7 @@ export default function PushNotificationButton() {
 
         const subscription = await registration.pushManager.getSubscription();
 
-        if (subscription) {
-          setStatus("enabled");
-        } else {
-          setStatus("idle");
-        }
+        setStatus(subscription ? "enabled" : "idle");
       } catch (error) {
         console.error("[PUSH] Failed to check subscription:", error);
         setStatus("error");
@@ -83,9 +87,12 @@ export default function PushNotificationButton() {
     checkSubscription();
   }, []);
 
+  // Subscribe to push notifications
   async function enableNotifications() {
     try {
       setStatus("loading");
+
+      console.log("[PUSH] Starting subscription...");
 
       if (!("serviceWorker" in navigator)) {
         throw new Error("Service workers are not supported.");
@@ -105,24 +112,47 @@ export default function PushNotificationButton() {
         throw new Error("VAPID public key is missing.");
       }
 
+      // 1. Request notification permission
+      console.log("[PUSH] Requesting permission...");
+
       const permission = await Notification.requestPermission();
+
+      console.log("[PUSH] Permission:", permission);
 
       if (permission !== "granted") {
         setStatus("denied");
         return;
       }
 
-      const registration = await navigator.serviceWorker.register("/sw.js");
+      // 2. Register service worker
+      console.log("[PUSH] Registering service worker...");
 
-      const existingSubscription =
-        await registration.pushManager.getSubscription();
+      await navigator.serviceWorker.register("/sw.js");
 
-      const subscription =
-        existingSubscription ??
-        (await registration.pushManager.subscribe({
+      // 3. Wait for service worker to become active
+      console.log("[PUSH] Waiting for service worker...");
+
+      const registration = await navigator.serviceWorker.ready;
+
+      console.log("[PUSH] Service worker ready.");
+
+      // 4. Check existing subscription
+      let subscription = await registration.pushManager.getSubscription();
+
+      // 5. Create subscription if one doesn't exist
+      if (!subscription) {
+        console.log("[PUSH] Creating new subscription...");
+
+        subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-        }));
+        });
+      }
+
+      console.log("[PUSH] Subscription obtained.");
+
+      // 6. Save subscription in Supabase
+      console.log("[PUSH] Saving subscription to backend...");
 
       const response = await fetch("/api/push/subscribe", {
         method: "POST",
@@ -132,30 +162,115 @@ export default function PushNotificationButton() {
         body: JSON.stringify(subscription),
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
-        throw new Error("Failed to save notification subscription.");
+        throw new Error(result.error || "Failed to save subscription.");
       }
+
+      console.log("[PUSH] Successfully subscribed:", result);
 
       setStatus("enabled");
     } catch (error) {
-      console.error("[PUSH] Failed:", error);
+      console.error("[PUSH] Subscription failed:", error);
+
       setStatus("error");
     }
   }
 
+  // Unsubscribe from push notifications
+  async function disableNotifications() {
+    try {
+      setStatus("unsubscribing");
+
+      console.log("[PUSH] Starting unsubscribe...");
+
+      if (!("serviceWorker" in navigator)) {
+        throw new Error("Service workers are not supported.");
+      }
+
+      // 1. Get active service worker
+      const registration = await navigator.serviceWorker.ready;
+
+      // 2. Get existing subscription
+      const subscription = await registration.pushManager.getSubscription();
+
+      if (!subscription) {
+        console.log("[PUSH] No active subscription found.");
+
+        setStatus("idle");
+        return;
+      }
+
+      const endpoint = subscription.endpoint;
+
+      // 3. Remove subscription from Supabase
+      console.log("[PUSH] Removing subscription from backend...");
+
+      const response = await fetch("/api/push/subscribe", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ endpoint }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.error || "Failed to remove subscription from database.",
+        );
+      }
+
+      console.log("[PUSH] Database subscription removed.");
+
+      // 4. Remove subscription from browser
+      console.log("[PUSH] Unsubscribing from browser...");
+
+      const unsubscribed = await subscription.unsubscribe();
+
+      if (!unsubscribed) {
+        throw new Error("Browser could not remove the subscription.");
+      }
+
+      console.log("[PUSH] Browser subscription removed.");
+
+      // 5. Update UI
+      setStatus("idle");
+
+      console.log("[PUSH] Successfully unsubscribed.");
+    } catch (error) {
+      console.error("[PUSH] Unsubscribe failed:", error);
+
+      setStatus("error");
+    }
+  }
+
+  // Hide button while checking subscription
   if (status === "checking") {
     return null;
   }
 
-  if (status === "enabled") {
+  // Subscribed or unsubscribing state
+  if (status === "enabled" || status === "unsubscribing") {
     return (
-      <button type="button" className="push-button subscribed" disabled>
+      <button
+        type="button"
+        className="push-button subscribed"
+        onClick={disableNotifications}
+        disabled={status === "unsubscribing"}
+      >
         <NotificationIcon />
-        <span>Subscribed</span>
+
+        <span>
+          {status === "unsubscribing" ? "Unsubscribing..." : "Unsubscribe"}
+        </span>
       </button>
     );
   }
 
+  // Subscribe, denied, or error state
   return (
     <button
       type="button"
