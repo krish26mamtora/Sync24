@@ -8,16 +8,16 @@ interface ClassificationRule {
   keywords: string[];
 }
 
-const CATEGORY_PRIORITY: Record<string, number> = {
-  Cybersecurity: 100,
-  "Artificial Intelligence": 90,
-  "Robotics & Emerging Tech": 80,
-  "Cloud & Infrastructure": 70,
-  Hardware: 60,
-  "Software Development": 50,
-  "Business & Startups": 40,
-  Technology: 10,
-};
+// const CATEGORY_PRIORITY: Record<string, number> = {
+//   Cybersecurity: 100,
+//   "Artificial Intelligence": 90,
+//   "Robotics & Emerging Tech": 80,
+//   "Cloud & Infrastructure": 70,
+//   Hardware: 60,
+//   "Software Development": 50,
+//   "Business & Startups": 40,
+//   Technology: 10,
+// };
 
 const CATEGORY_RULES: ClassificationRule[] = [
   {

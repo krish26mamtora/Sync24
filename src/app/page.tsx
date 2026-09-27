@@ -1,6 +1,6 @@
 "use client";
 
-import PushNotificationButton from "@/components/push/PushNotificationButton";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import Header from "@/components/layout/Header";
 
@@ -68,6 +68,7 @@ export default function Home() {
     function handleScroll() {
       const totalHeight =
         document.documentElement.scrollHeight - window.innerHeight;
+
       if (totalHeight > 0) {
         const progress = (window.scrollY / totalHeight) * 100;
         setScrollProgress(progress);
@@ -77,6 +78,7 @@ export default function Home() {
     }
 
     window.addEventListener("scroll", handleScroll);
+
     return () => window.removeEventListener("scroll", handleScroll);
   }, [currentIndex]);
 
@@ -91,7 +93,7 @@ export default function Home() {
         <div className="loading-logo">S</div>
         <h1>Sync24</h1>
         <div className="loading-spinner" aria-hidden="true" />
-        <p>Loading today's edition...</p>
+        <p>Loading Today&apos;s edition...</p>
       </main>
     );
   }
@@ -144,6 +146,7 @@ export default function Home() {
           ))}
         </div>
       </div>
+
       {/* Reading Progress Bar */}
       <div
         className="reading-progress-bar"
@@ -162,9 +165,11 @@ export default function Home() {
       <article className="article">
         <div className="article-meta">
           <span className="source-pill">{article.source_name}</span>
+
           {article.category && (
             <span className="category-text"> · {article.category}</span>
           )}
+
           {formattedDate && (
             <span className="date-text"> · {formattedDate}</span>
           )}
@@ -173,10 +178,13 @@ export default function Home() {
         <h2>{article.title}</h2>
 
         {article.image_url && (
-          <img
+          <Image
             src={article.image_url}
             alt={article.title}
+            width={1200}
+            height={675}
             className="article-image"
+            unoptimized
           />
         )}
 

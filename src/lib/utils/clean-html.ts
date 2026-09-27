@@ -118,8 +118,6 @@ const JUNK_SELECTORS = [
 /**
  * These are the ONLY HTML tags that are allowed
  * inside the stored article content.
- *
- * div/span are intentionally NOT included.
  */
 const ALLOWED_ARTICLE_TAGS = [
   "p",
@@ -231,9 +229,6 @@ export function cleanArticleHtml(rawHtml: string | null): string | null {
   // =========================================================
   // STEP 4
   // Clean figures
-  //
-  // Some publishers put caption text directly inside
-  // <figure> instead of using <figcaption>.
   // =========================================================
 
   $("figure").each((_, element) => {
@@ -295,12 +290,33 @@ export function cleanArticleHtml(rawHtml: string | null): string | null {
     const alt = $img.attr("alt");
 
     /*
-     * Cheerio's Element type is not exported by your
-     * installed version, so don't use cheerio.Element.
+     * Remove every existing attribute first.
      *
-     * We only need the attribute names here.
+     * This avoids accessing Cheerio's internal `attribs`
+     * object and therefore removes the `any` usage.
      */
-    for (const attribute of Object.keys((element as any).attribs ?? {})) {
+    const attributes = [
+      "src",
+      "alt",
+      "title",
+      "width",
+      "height",
+      "class",
+      "id",
+      "style",
+      "loading",
+      "decoding",
+      "srcset",
+      "sizes",
+      "data-src",
+      "data-srcset",
+      "data-lazy-src",
+      "data-original",
+      "data-original-src",
+      "data-lazy",
+    ];
+
+    for (const attribute of attributes) {
       $img.removeAttr(attribute);
     }
 
@@ -357,7 +373,6 @@ export function cleanArticleHtml(rawHtml: string | null): string | null {
     const $element = $(element);
 
     const hasText = $element.text().trim().length > 0;
-
     const hasImage = $element.find("img").length > 0;
 
     if (!hasText && !hasImage) {
@@ -370,17 +385,14 @@ export function cleanArticleHtml(rawHtml: string | null): string | null {
   // Remove attributes from everything except images
   // =========================================================
 
-  $("*").each((_, element) => {
-    const $element = $(element);
-
-    if (element.type === "tag" && element.name === "img") {
-      return;
-    }
-
-    for (const attribute of Object.keys((element as any).attribs ?? {})) {
-      $element.removeAttr(attribute);
-    }
-  });
+  /*
+   * Since the final sanitizer already has an explicit
+   * allowedAttributes whitelist, we don't need to inspect
+   * Cheerio's internal attribute object here.
+   *
+   * sanitizeHtml() below will remove every attribute that
+   * isn't explicitly allowed.
+   */
 
   // =========================================================
   // STEP 10

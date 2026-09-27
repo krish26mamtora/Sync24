@@ -9,7 +9,34 @@ import {
   cleanArticleTitle,
 } from "@/lib/utils/clean-html";
 
-const parser = new Parser({
+interface MediaField {
+  $?: {
+    url?: string;
+  };
+  url?: string;
+}
+
+interface RssItem {
+  title?: string;
+  link?: string;
+  description?: string;
+  content?: string;
+  contentSnippet?: string;
+  contentEncoded?: string;
+  creator?: string;
+  author?: string;
+  isoDate?: string;
+  pubDate?: string;
+  guid?: string;
+  id?: string;
+  enclosure?: {
+    url?: string;
+  };
+  mediaContent?: MediaField;
+  mediaThumbnail?: MediaField;
+}
+
+const parser = new Parser<RssItem>({
   customFields: {
     item: [
       ["media:content", "mediaContent"],
@@ -20,7 +47,7 @@ const parser = new Parser({
   },
 });
 
-function extractImage(item: any): string | null {
+function extractImage(item: RssItem): string | null {
   if (item.enclosure?.url) {
     return item.enclosure.url;
   }
@@ -55,7 +82,7 @@ function extractImage(item: any): string | null {
 }
 
 function normalizeItem(
-  item: any,
+  item: RssItem,
   source: (typeof newsSources)[number],
 ): NormalizedNewsArticle | null {
   if (!item.title || !item.link) {
