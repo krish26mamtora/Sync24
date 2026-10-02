@@ -740,3 +740,93 @@ body {
     font-size: 13px;
   }
 }
+/*
+ * Add to your global stylesheet (e.g. app/globals.css).
+ *
+ * Colors use currentColor / color-mix so it works in light and dark themes.
+ * Swap in your own CSS variables, or copy the look of PushNotificationButton,
+ * if you want an exact match.
+ */
+
+/* Only needed if .header-right isn't already a flex row */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.install-pwa {
+  position: relative;
+  display: inline-flex;
+}
+
+.install-pwa-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1;
+  color: inherit;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.install-pwa-button:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  border-color: color-mix(in srgb, currentColor 40%, transparent);
+}
+
+.install-pwa-button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* iOS install instructions */
+.install-pwa-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 50;
+  width: min(260px, 80vw);
+  padding: 12px 14px;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  text-align: left;
+  color: var(--foreground, #111);
+  background: var(--background, #fff);
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.install-pwa-popover-title {
+  margin: 0 0 6px;
+  font-weight: 600;
+}
+
+.install-pwa-popover ol {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.install-pwa-popover li + li {
+  margin-top: 4px;
+}
+
+/* Icon-only on small screens so the header doesn't overflow */
+@media (max-width: 480px) {
+  .install-pwa-label {
+    display: none;
+  }
+
+  .install-pwa-button {
+    padding: 8px;
+  }
+}
