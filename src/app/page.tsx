@@ -185,6 +185,7 @@ export default function Home() {
             height={675}
             className="article-image"
             unoptimized
+            priority
           />
         )}
 

@@ -345,24 +345,41 @@ export function cleanArticleHtml(rawHtml: string | null): string | null {
      * becomes:
      *
      * OpenAI
+     *
+     * Preserve nested formatting where possible.
      */
     $a.replaceWith($a.contents());
   });
 
   // =========================================================
   // STEP 7
-  // Normalize whitespace
+  // Normalize whitespace without destroying HTML formatting
   // =========================================================
 
-  $("p, h2, h3, h4, li, blockquote, figcaption").each((_, element) => {
-    const $element = $(element);
+  /*
+   * Normalize whitespace inside text nodes.
+   *
+   * IMPORTANT:
+   * Do not use .text() followed by .html() replacement here.
+   * That would destroy inline elements such as <strong>,
+   * <em>, and <code>.
+   *
+   * This preserves:
+   *
+   * <p>This is <strong>important</strong> text.</p>
+   *
+   * While normalizing excessive whitespace.
+   */
 
-    const text = $element.text().replace(/\s+/g, " ").trim();
-
-    if (text) {
-      $element.text(text);
-    }
-  });
+  $("body")
+    .find("*")
+    .addBack()
+    .contents()
+    .each((_, node) => {
+      if (node.type === "text" && node.data) {
+        node.data = node.data.replace(/\s+/g, " ");
+      }
+    });
 
   // =========================================================
   // STEP 8
@@ -382,16 +399,23 @@ export function cleanArticleHtml(rawHtml: string | null): string | null {
 
   // =========================================================
   // STEP 9
-  // Remove attributes from everything except images
+  // Remove unnecessary whitespace between HTML elements
   // =========================================================
 
   /*
-   * Since the final sanitizer already has an explicit
-   * allowedAttributes whitelist, we don't need to inspect
-   * Cheerio's internal attribute object here.
+   * Example:
    *
-   * sanitizeHtml() below will remove every attribute that
-   * isn't explicitly allowed.
+   * <p>First paragraph</p>
+   *
+   *
+   * <p>Second paragraph</p>
+   *
+   * becomes:
+   *
+   * <p>First paragraph</p><p>Second paragraph</p>
+   *
+   * This removes whitespace-only text nodes between
+   * HTML elements without removing spaces between words.
    */
 
   // =========================================================
@@ -399,7 +423,7 @@ export function cleanArticleHtml(rawHtml: string | null): string | null {
   // Get cleaned HTML
   // =========================================================
 
-  const bodyHtml = $("body").html()?.trim() || "";
+  const bodyHtml = $("body").html()?.replace(/>\s+</g, "><").trim() || "";
 
   if (!bodyHtml) {
     return null;
