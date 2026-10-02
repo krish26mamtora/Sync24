@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Script from "next/script";
+import ServiceWorkerRegistration from "@/components/pwa/ServiceWorkerRegistration";
 import "./globals.css";
 
 const siteUrl = "https://sync24.vercel.app";
@@ -85,7 +87,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ServiceWorkerRegistration />
+        {children}
+        <Script src="/capture-install-prompt.js" strategy="beforeInteractive" />
+      </body>
     </html>
   );
 }

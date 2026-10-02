@@ -1,5 +1,6 @@
 "use client";
 
+import InstallPWAButton from "@/components/pwa/InstallPWAButton";
 import PushNotificationButton from "@/components/push/PushNotificationButton";
 
 interface HeaderProps {
@@ -55,6 +56,7 @@ export default function Header({
 
       {/* Right */}
       <div className="header-right">
+        <InstallPWAButton />
         <PushNotificationButton />
       </div>
     </header>
